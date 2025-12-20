@@ -1,0 +1,100 @@
+#!/bin/bash
+# 一键启动 FAST-LIO2 系统
+# 包括: 激光雷达驱动 + IMU驱动 + FAST-LIO2
+
+set -e
+
+# 颜色定义
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+echo -e "${BLUE}========================================${NC}"
+echo -e "${BLUE}  FAST-LIO2 系统启动脚本${NC}"
+echo -e "${BLUE}========================================${NC}"
+
+# 设置工作区路径
+WORKSPACE_DIR="/home/rosdev/ros2_ws"
+
+# Source ROS2环境
+source /opt/ros/foxy/setup.bash
+source ${WORKSPACE_DIR}/install/setup.bash
+
+# 配置参数
+LIDAR_LAUNCH="lslidar_driver lslidar_cx_launch.py"
+IMU_LAUNCH="handsfree_imu_ros2 imu.launch.py port:=/dev/ttyUSB0"
+FASTLIO_CONFIG="c16.yaml"
+
+# 函数：清理后台进程
+cleanup() {
+    echo -e "\n${YELLOW}正在清理进程...${NC}"
+    pkill -f "lslidar_driver_node" 2>/dev/null || true
+    pkill -f "imu_node" 2>/dev/null || true
+    pkill -f "fastlio_mapping" 2>/dev/null || true
+    pkill -f "rviz2" 2>/dev/null || true
+    echo -e "${GREEN}清理完成${NC}"
+    exit 0
+}
+
+# 捕获 Ctrl+C
+trap cleanup SIGINT SIGTERM
+
+# 检查设备
+echo -e "${YELLOW}检查设备...${NC}"
+
+# 检查激光雷达网络（假设是网络雷达）
+if ping -c 1 192.168.1.200 &>/dev/null; then
+    echo -e "${GREEN}✓ 激光雷达网络连接正常${NC}"
+else
+    echo -e "${RED}✗ 警告: 无法连接激光雷达 (192.168.1.200)${NC}"
+fi
+
+# 检查 IMU 串口
+if [ -e /dev/ttyUSB0 ]; then
+    echo -e "${GREEN}✓ IMU 串口设备存在 (/dev/ttyUSB0)${NC}"
+else
+    echo -e "${RED}✗ 警告: IMU 串口设备不存在 (/dev/ttyUSB0)${NC}"
+fi
+
+echo ""
+
+# 先清理可能存在的旧进程
+echo -e "${YELLOW}清理旧进程...${NC}"
+pkill -f "lslidar_driver_node" 2>/dev/null || true
+pkill -f "imu_node" 2>/dev/null || true
+pkill -f "fastlio_mapping" 2>/dev/null || true
+pkill -f "rviz2" 2>/dev/null || true
+sleep 2
+
+# 启动激光雷达驱动
+echo -e "${BLUE}[1/3] 启动激光雷达驱动...${NC}"
+ros2 launch ${LIDAR_LAUNCH} &
+LIDAR_PID=$!
+sleep 3
+
+# 启动 IMU 驱动
+echo -e "${BLUE}[2/3] 启动 IMU 驱动...${NC}"
+ros2 launch ${IMU_LAUNCH} &
+IMU_PID=$!
+sleep 2
+
+# 启动 FAST-LIO2
+echo -e "${BLUE}[3/3] 启动 FAST-LIO2...${NC}"
+ros2 launch fast_lio mapping.launch.py config_file:=${FASTLIO_CONFIG} rviz:=true &
+FASTLIO_PID=$!
+
+echo ""
+echo -e "${GREEN}========================================${NC}"
+echo -e "${GREEN}  所有节点已启动!${NC}"
+echo -e "${GREEN}========================================${NC}"
+echo -e "  激光雷达驱动 PID: ${LIDAR_PID}"
+echo -e "  IMU驱动 PID: ${IMU_PID}"
+echo -e "  FAST-LIO2 PID: ${FASTLIO_PID}"
+echo ""
+echo -e "${YELLOW}按 Ctrl+C 停止所有节点${NC}"
+echo ""
+
+# 等待进程
+wait
