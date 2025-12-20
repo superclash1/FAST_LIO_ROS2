@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # FAST-LIO2 ROS2 完整开发环境# FAST-LIO2 ROS2 工作空间# FAST_LIO_ROS2
 
 
@@ -5,9 +6,15 @@
 > **基于 Docker 的 FAST-LIO2 实时 SLAM 系统容器化方案**  FAST-LIO2 workspace and drivers
 
 > 本项目将 FAST-LIO2（Fast LiDAR-Inertial Odometry）及其依赖的雷达/IMU/底盘驱动完整打包，提供 Docker 镜像方便快速部署。
+=======
+# FAST-LIO2 ROS2 工作空间
 
-基于 ROS2 Foxy 的 FAST-LIO2 SLAM 系统完整工作空间，集成激光雷达驱动、IMU 驱动和建图算法。
+基于 ROS2 Foxy 的 FAST-LIO2 SLAM 系统完整工作空间。
+>>>>>>> docs: 简化 README 文档，保留核心信息
 
+## 📦 包含的功能包
+
+<<<<<<< HEAD
 ---
 
 说明（简体中文）
@@ -16,77 +23,89 @@
 
 ## 📋 项目简介
 
-本仓库是一个**完整的 ROS2 工作空间**，包含：
+# FAST-LIO2 ROS2 工作空间
 
-以下包含两种在本仓库环境下运行 FAST-LIO2 的方法：
+基于 ROS2 Foxy 的 FAST-LIO2 SLAM 系统完整工作空间。
 
-- ✅ **FAST-LIO2 算法**：实时激光雷达-IMU 紧耦合 SLAM
+## 📦 包含的功能包
 
-- ✅ **激光雷达驱动**：Lslidar C16（支持其他机械式/混合固态雷达）本项目是一个完整的 ROS2 工作空间，用于运行 FAST-LIO2（Fast LiDAR-Inertial Odometry）实时 SLAM 系统。FAST-LIO2 是一种高效的激光雷达-惯性里程计算法，能够在资源受限的平台上实现实时定位与建图。1) 手动按步骤启动（分开启动激光雷达驱动、IMU 驱动与 FAST-LIO 节点）
+- **FAST_LIO_ROS2**：实时激光雷达-IMU 紧耦合 SLAM
+- **Lslidar_ROS2_driver**：镭神激光雷达驱动（C16/C32/CX 系列）
+- **handsfree_imu_ros2**：HandsFree IMU ROS2 驱动
+- **hunter_ros2**：Hunter AGV 底盘驱动（可选）
+- **ugv_sdk**：通用无人车 SDK
 
-- ✅ **IMU 驱动**：HandsFree A9 九轴 IMU
+## 🛠 硬件要求
 
-- ✅ **底盘驱动**：Hunter AGV（可选）2) 使用仓库内的一键脚本 `start_all.sh` 启动（更方便）
+| 硬件 | 型号 | 接口 |
+|------|------|------|
+| 激光雷达 | Lslidar C16 | 网络（192.168.1.200） |
+| IMU | HandsFree A9 | 串口（/dev/ttyUSB0, 921600） |
+| 底盘（可选） | Hunter 2.0 | CAN |
 
-- ✅ **Docker 容器化**：基于 ROS2 Foxy，支持 x86 PC 和 Jetson 平台
+## 🚀 快速开始
 
-- ✅ **一键启动脚本**：自动启动所有节点### 主要特性
+### 构建工作区
 
+```bash
+source /opt/ros/foxy/setup.bash
+cd ~/ros2_ws
+rosdep install --from-paths src --ignore-src -r -y
+colcon build --symlink-install
+source install/setup.bash
+```
 
+### 一键启动
 
-### 支持的硬件平台重要前置项
+```bash
+./start_all.sh
+```
 
+脚本会自动启动：雷达驱动 → IMU 驱动 → FAST-LIO2 建图节点
 
+### 手动启动
 
-| 组件类型 | 型号 | 接口 | 说明 |- ✅ 实时 3D 点云建图- 本仓库基于 ROS2（你的环境是 Foxy），请先确保已安装并配置好 ROS2 环境。
+```bash
+# 终端 1：激光雷达
+ros2 launch lslidar_driver lslidar_cx_launch.py
 
-|---------|------|------|------|
+# 终端 2：IMU
+ros2 launch handsfree_imu_ros2 imu.launch.py port:=/dev/ttyUSB0
 
-| **激光雷达** | Lslidar C16/C32 | 网络（UDP） | 16/32 线机械式雷达，默认 IP 192.168.1.200 |- ✅ 激光雷达-IMU 紧耦合融合- 若你在当前机器上尚未构建过工作区，先在工作区根目录运行一次构建：
+# 终端 3：FAST-LIO
+ros2 launch fast_lio mapping.launch.py config_file:=c16.yaml rviz:=true
+```
 
-| **IMU** | HandsFree A9/TBA9 | 串口 | 9 轴 IMU，默认 /dev/ttyUSB0，波特率 921600 |
+## ⚙️ 配置
 
-| **底盘**（可选） | Hunter 2.0 | CAN | AgileX Hunter AGV，需 CAN-USB 适配器 |- ✅ 支持多种激光雷达型号（Livox、Velodyne、Lslidar等）
+编辑 `src/FAST_LIO_ROS2/config/c16.yaml` 修改参数：
 
-| **计算平台** | x86 PC / Jetson | - | 推荐 4 核+ CPU，8GB+ RAM |
+```yaml
+common:
+  lid_topic: "/cx/lslidar_point_cloud"
+  imu_topic: "/imu/data"
 
-- ✅ 低计算资源消耗，适合嵌入式平台```bash
+preprocess:
+  lidar_type: 2      # 2=机械式雷达
+  scan_line: 16      # C16 是 16 线
+  blind: 0.5         # 盲区距离
 
----
+mapping:
+  filter_size_surf: 0.5
+  point_filter_num: 3
+```
 
-- ✅ 一键启动脚本，简化操作流程# 进入工作区
+## 🐛 常见问题
 
-## 🚀 快速开始（推荐使用 Docker）
+**1. "No Effective Points!"** → 移动平台或调小滤波参数  
+**2. 找不到 /dev/ttyUSB0** → `sudo chmod 666 /dev/ttyUSB0`  
+**3. 无法连接雷达** → `ping 192.168.1.200` 检查网络  
 
-- ✅ Docker 容器化支持（如果在容器环境中运行）cd /home/rosdev/ros2_ws
+## 📚 参考
 
-### 方法一：使用 Docker Compose（最简单）
+- [FAST-LIO2](https://github.com/hku-mars/FAST_LIO)
+- [ROS2 移植版](https://github.com/Ericsii/FAST_LIO_ROS2)
 
-
-
-#### 前置条件
-
----# （可选）将源码更新或检查修改
-
-1. **安装 Docker** ≥ 20.10
-
-   ```bash# git status
-
-   sudo apt-get update
-
-   sudo apt-get install docker.io docker-compose## 🛠 硬件要求
-
-   sudo usermod -aG docker $USER  # 添加当前用户到 docker 组
-
-   # 注销并重新登录以生效# 构建（只需在第一次或修改源码后运行）
-
-   ```
-
-### 必需硬件colcon build --symlink-install
-
-2. **（可选）安装 NVIDIA Container Toolkit**（GPU 加速）
-
-   ```bash```
 
    distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
 
@@ -409,11 +428,19 @@ ros2 topic echo /imu/data- 解决了IMU不发布数据的bug
 - `ugv_sdk`：通用无人车 SDK
 
 ---
+=======
+| 硬件 | 型号 | 接口 |
+|------|------|------|
+| 激光雷达 | Lslidar C16 | 网络（192.168.1.200） |
+| IMU | HandsFree A9 | 串口（/dev/ttyUSB0, 921600） |
+| 底盘（可选） | Hunter 2.0 | CAN |
+>>>>>>> docs: 简化 README 文档，保留核心信息
 
 **使用方法**：
 
 ```bash## 🚀 快速开始
 
+<<<<<<< HEAD
 # 1. 设置 CAN 接口
 
 cd ~/ros2_ws/src/ugv_sdk/scripts### 环境要求
@@ -552,8 +579,24 @@ ros2 topic echo /Odometry
 
 ```# 运行启动脚本
 
+=======
+### 构建工作区
+
+```bash
+source /opt/ros/foxy/setup.bash
+cd ~/ros2_ws
+rosdep install --from-paths src --ignore-src -r -y
+colcon build --symlink-install
+source install/setup.bash
+```
+
+### 一键启动
+
+```bash
+>>>>>>> docs: 简化 README 文档，保留核心信息
 ./start_all.sh
 
+<<<<<<< HEAD
 ---```
 
 
@@ -618,8 +661,23 @@ source /opt/ros/foxy/setup.bash
 
 取消注释并修改设备路径：source ~/ros2_ws/install/setup.bash
 
+=======
+脚本会自动启动：雷达驱动 → IMU 驱动 → FAST-LIO2 建图节点
+
+### 手动启动
+
+```bash
+# 终端 1：激光雷达
+ros2 launch lslidar_driver lslidar_cx_launch.py
+
+# 终端 2：IMU
+ros2 launch handsfree_imu_ros2 imu.launch.py port:=/dev/ttyUSB0
+
+# 终端 3：FAST-LIO
+>>>>>>> docs: 简化 README 文档，保留核心信息
 ros2 launch fast_lio mapping.launch.py config_file:=c16.yaml rviz:=true
 
+<<<<<<< HEAD
 ```yaml```
 
 devices:
@@ -1096,65 +1154,34 @@ docker-compose logs -f # 查看日志
 主要配置文件：`src/FAST_LIO_ROS2/config/c16.yaml`
 
 关键参数说明：
+=======
+## ⚙️ 配置
+
+编辑 `src/FAST_LIO_ROS2/config/c16.yaml` 修改参数：
+
+>>>>>>> docs: 简化 README 文档，保留核心信息
 ```yaml
 common:
-    lid_topic:  "/cx/lslidar_point_cloud"   # 雷达话题
-    imu_topic:  "/imu/data"                 # IMU话题
-    
+    lid_topic: "/cx/lslidar_point_cloud"
+    imu_topic: "/imu/data"
+
 preprocess:
-    lidar_type: 2                           # 2=Velodyne/Lslidar
-    scan_line: 16                           # 线数
-    blind: 1.0                              # 盲区距离(m)
-    
+    lidar_type: 2      # 2=机械式雷达
+    scan_line: 16      # C16 是 16 线
+    blind: 0.5         # 盲区距离
+
 mapping:
-    filter_size_surf: 0.5                   # 点云滤波尺寸
-    filter_size_map: 0.5                    # 地图滤波尺寸
-    cube_side_length: 200                   # 地图立方体边长(m)
-    
-publish:
-    path_publish_en: true                   # 发布轨迹
-    scan_publish_en: true                   # 发布点云
+    filter_size_surf: 0.5
+    point_filter_num: 3
 ```
 
-修改后需重新编译：
-```bash
-colcon build --packages-select fast_lio
-source install/setup.bash
-```
+## 🐛 常见问题
 
-### 查看源码
+**1. "No Effective Points!"** → 移动平台或调小滤波参数  
+**2. 找不到 /dev/ttyUSB0** → `sudo chmod 666 /dev/ttyUSB0`  
+**3. 无法连接雷达** → `ping 192.168.1.200` 检查网络  
 
-- FAST-LIO核心算法：`src/FAST_LIO_ROS2/src/laserMapping.cpp`
-- IMU驱动节点：`src/handsfree_imu_ros2/handsfree_imu_ros2/imu_node.py`
-- 雷达驱动：`src/Lslidar_ROS2_driver/lslidar_driver/src/`
+## 📚 参考
 
----
-
-## 📄 许可证
-
-各子包遵循各自的开源许可证：
-- FAST_LIO_ROS2: GPLv2
-- Lslidar_ROS2_driver: BSD
-- handsfree_imu_ros2: MIT
-
----
-
-## 🙏 致谢
-
-- [FAST-LIO2](https://github.com/hku-mars/FAST_LIO) 原始算法实现
-- Lslidar ROS2驱动维护者
-- HandsFree Robotics 开源社区
-
----
-
-## 📞 支持与反馈
-
-如遇到问题或有改进建议，请通过以下方式反馈：
-
-1. 提交 GitHub Issue
-2. 查看 [FAST-LIO2 官方文档](https://github.com/hku-mars/FAST_LIO)
-3. 检查本文档"常见问题排查"章节
-
----
-
-**最后更新**：2025-12-20
+- [FAST-LIO2](https://github.com/hku-mars/FAST_LIO)
+- [ROS2 移植版](https://github.com/Ericsii/FAST_LIO_ROS2)
