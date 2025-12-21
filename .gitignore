@@ -11,3 +11,9 @@ __pycache__/
 .DS_Store
 # colcon and other
 colcon_cached
+
+# Docker 文件应该在外层项目根目录，不应该在 workspace
+Dockerfile
+docker-compose.yml
+.dockerignore
+scripts/
