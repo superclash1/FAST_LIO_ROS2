@@ -42,20 +42,14 @@ cleanup() {
 trap cleanup SIGINT SIGTERM
 
 # 检查设备
-echo -e "${YELLOW}检查设备...${NC}"
-
-# 检查激光雷达网络（假设是网络雷达）
-if ping -c 1 192.168.1.200 &>/dev/null; then
-    echo -e "${GREEN}✓ 激光雷达网络连接正常${NC}"
-else
-    echo -e "${RED}✗ 警告: 无法连接激光雷达 (192.168.1.200)${NC}"
-fi
+echo -e "${YELLOW}正在检查设备...${NC}"
 
 # 检查 IMU 串口
 if [ -e /dev/ttyUSB0 ]; then
-    echo -e "${GREEN}✓ IMU 串口设备存在 (/dev/ttyUSB0)${NC}"
+    echo -e "${GREEN}✓ IMU 串口设备就绪${NC}"
 else
-    echo -e "${RED}✗ 警告: IMU 串口设备不存在 (/dev/ttyUSB0)${NC}"
+    echo -e "${RED}✗ 错误: IMU 串口设备不存在 (/dev/ttyUSB0)${NC}"
+    echo -e "${RED}  请检查 IMU 连接${NC}"
 fi
 
 echo ""
@@ -84,6 +78,7 @@ sleep 2
 echo -e "${BLUE}[3/3] 启动 FAST-LIO2...${NC}"
 ros2 launch fast_lio mapping.launch.py config_file:=${FASTLIO_CONFIG} rviz:=true &
 FASTLIO_PID=$!
+sleep 5
 
 echo ""
 echo -e "${GREEN}========================================${NC}"
@@ -93,6 +88,22 @@ echo -e "  激光雷达驱动 PID: ${LIDAR_PID}"
 echo -e "  IMU驱动 PID: ${IMU_PID}"
 echo -e "  FAST-LIO2 PID: ${FASTLIO_PID}"
 echo ""
+
+# 验证点云话题
+echo -e "${YELLOW}正在验证系统状态...${NC}"
+sleep 2  # 等待点云驱动完全初始化
+
+# 检测点云话题是否发布
+if ros2 topic list 2>/dev/null | grep -q "/cx/lslidar_point_cloud"; then
+    echo -e "${GREEN}✓ 激光雷达工作正常${NC}"
+    echo -e "${GREEN}✓ 系统已就绪${NC}"
+    echo -e "${GREEN}  提示: RViz窗口应能看到点云数据${NC}"
+else
+    echo -e "${RED}✗ 未检测到激光雷达点云数据${NC}"
+    echo -e "${YELLOW}  请检查: 雷达电源、网络连接 (192.168.1.200)${NC}"
+fi
+echo ""
+
 echo -e "${YELLOW}按 Ctrl+C 停止所有节点${NC}"
 echo ""
 
