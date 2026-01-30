@@ -41,15 +41,34 @@ cleanup() {
 # 捕获 Ctrl+C
 trap cleanup SIGINT SIGTERM
 
+# ========== 硬件初始化 ==========
+echo -e "${YELLOW}正在初始化硬件...${NC}"
+
+# 1. 配置网络 (激光雷达需要 100Mbps 全双工)
+echo -e "${BLUE}配置网络接口...${NC}"
+sudo ethtool -s eth0 speed 100 duplex full autoneg off 2>/dev/null && \
+    echo -e "${GREEN}✓ 网络配置完成 (100Mbps Full Duplex)${NC}" || \
+    echo -e "${YELLOW}⚠ 网络配置跳过 (可能已配置或无权限)${NC}"
+
+# 2. 创建 USB 串口设备节点 (容器环境需要)
+if [ ! -e /dev/ttyUSB0 ]; then
+    echo -e "${BLUE}创建 USB 串口设备节点...${NC}"
+    sudo mknod /dev/ttyUSB0 c 188 0 2>/dev/null && \
+    sudo chmod 666 /dev/ttyUSB0 2>/dev/null && \
+    echo -e "${GREEN}✓ /dev/ttyUSB0 已创建${NC}" || \
+    echo -e "${RED}✗ 无法创建 /dev/ttyUSB0${NC}"
+fi
+
 # 检查设备
 echo -e "${YELLOW}正在检查设备...${NC}"
 
 # 检查 IMU 串口
 if [ -e /dev/ttyUSB0 ]; then
-    echo -e "${GREEN}✓ IMU 串口设备就绪${NC}"
+    echo -e "${GREEN}✓ IMU 串口设备就绪 (/dev/ttyUSB0)${NC}"
 else
     echo -e "${RED}✗ 错误: IMU 串口设备不存在 (/dev/ttyUSB0)${NC}"
     echo -e "${RED}  请检查 IMU 连接${NC}"
+    echo -e "${YELLOW}  提示: 在宿主机运行 'ls /dev/ttyUSB*' 查看实际设备名${NC}"
 fi
 
 echo ""
