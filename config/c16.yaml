@@ -1,0 +1,60 @@
+/**:
+    ros__parameters:
+        feature_extract_enable: false
+        point_filter_num: 2              # 每2个点取1个
+        max_iteration: 3
+        filter_size_surf: 0.25           # 室内优化：更小的体素尺寸
+        filter_size_map: 0.25            # 地图滤波尺寸
+        cube_side_length: 100.0          # 室内场景：减小地图范围到100米
+        runtime_pos_log_enable: false
+        map_file_path: "./indoor_map.pcd"
+
+        common:
+            lid_topic: "/cx/lslidar_point_cloud"
+            imu_topic: "/imu/data"
+            time_sync_en: true           # 启用时间同步
+            time_offset_lidar_to_imu: 0.0
+
+        preprocess:
+            lidar_type: 2                # 2 = VELO16 (Velodyne格式，适用于Lslidar C16)
+            scan_line: 16                # C16 是 16 线雷达
+            scan_rate: 10
+            timestamp_unit: 0            # 0 = 秒 (Lslidar使用秒为单位的float时间戳)
+            blind: 0.3                   # 室内：减小盲区到0.3米
+            
+        filter:
+            voxel_size: 0.25             # 体素滤波尺寸
+
+        mapping:
+            acc_cov: 0.08                # 室内IMU优化参数
+            gyr_cov: 0.004
+            b_acc_cov: 0.0008
+            b_gyr_cov: 0.00004
+            fov_degree: 360.0
+            det_range: 25.0              # 室内:检测范围25米
+            minimum_pts: 50              # 最小点数要求
+            extrinsic_est_en: false      # 关闭外参估计,提高稳定性
+            extrinsic_T: [0.0, 0.0, 0.0]
+            extrinsic_R: [1.0, 0.0, 0.0,
+                          0.0, 1.0, 0.0,
+                          0.0, 0.0, 1.0]
+        
+        imu:
+            imu_en: true                 # 启用IMU
+            imu_rate: 200                # IMU采样率200Hz
+            acc_n: 0.08                  # 加速度计噪声
+            gyr_n: 0.004                 # 陀螺仪噪声
+            acc_w: 0.0008                # 加速度计随机游走
+            gyr_w: 0.00004               # 陀螺仪随机游走
+
+        publish:
+            path_en: true
+            scan_publish_en: true
+            dense_publish_en: true
+            scan_bodyframe_pub_en: true
+            effect_map_en: false
+            map_en: true
+
+        pcd_save:
+            pcd_save_en: false
+            interval: -1
