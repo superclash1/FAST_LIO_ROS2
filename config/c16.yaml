@@ -41,7 +41,7 @@
         
         imu:
             imu_en: true                 # 启用IMU
-            imu_rate: 200                # IMU采样率200Hz
+            imu_rate: 150                # IMU采样率200Hz
             acc_n: 0.08                  # 加速度计噪声
             gyr_n: 0.004                 # 陀螺仪噪声
             acc_w: 0.0008                # 加速度计随机游走

@@ -23,7 +23,8 @@ source /opt/ros/foxy/setup.bash
 source ${WORKSPACE_DIR}/install/setup.bash
 
 # 配置参数
-LIDAR_LAUNCH="lslidar_driver lslidar_cx_launch.py"
+# 使用自定义launch文件，不启动激光雷达的RViz（节省资源）
+LIDAR_LAUNCH_SCRIPT="${WORKSPACE_DIR}/scripts/lslidar_no_rviz.launch.py"
 IMU_LAUNCH="handsfree_imu_ros2 imu.launch.py port:=/dev/ttyUSB0"
 FASTLIO_CONFIG="c16.yaml"
 
@@ -45,9 +46,13 @@ trap cleanup SIGINT SIGTERM
 echo -e "${YELLOW}正在初始化硬件...${NC}"
 
 # 1. 配置网络 (激光雷达需要 100Mbps 全双工)
+# 重要：必须先 down 再配置，否则不生效！
 echo -e "${BLUE}配置网络接口...${NC}"
+sudo ifconfig eth0 down 2>/dev/null
+sleep 2
+sudo ifconfig eth0 192.168.1.102 netmask 255.255.255.0 up 2>/dev/null
 sudo ethtool -s eth0 speed 100 duplex full autoneg off 2>/dev/null && \
-    echo -e "${GREEN}✓ 网络配置完成 (100Mbps Full Duplex)${NC}" || \
+    echo -e "${GREEN}✓ 网络配置完成 (IP: 192.168.1.102, 100Mbps Full Duplex)${NC}" || \
     echo -e "${YELLOW}⚠ 网络配置跳过 (可能已配置或无权限)${NC}"
 
 # 2. 创建 USB 串口设备节点 (容器环境需要)
@@ -81,15 +86,15 @@ pkill -f "fastlio_mapping" 2>/dev/null || true
 pkill -f "rviz2" 2>/dev/null || true
 sleep 2
 
-# 启动激光雷达驱动
+# 启动激光雷达驱动（不启动RViz，节省资源）
 echo -e "${BLUE}[1/3] 启动激光雷达驱动...${NC}"
-ros2 launch ${LIDAR_LAUNCH} &
+ros2 launch ${LIDAR_LAUNCH_SCRIPT} &
 LIDAR_PID=$!
 sleep 3
 
-# 启动 IMU 驱动
+# 启动 IMU 驱动（输出重定向到日志文件，避免终端刷屏）
 echo -e "${BLUE}[2/3] 启动 IMU 驱动...${NC}"
-ros2 launch ${IMU_LAUNCH} &
+ros2 launch ${IMU_LAUNCH} >> /tmp/imu_node.log 2>&1 &
 IMU_PID=$!
 sleep 2
 
